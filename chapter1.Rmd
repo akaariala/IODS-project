@@ -7,4 +7,4 @@ This is a neat data analysis course.
 
 Here is a link to my course repo: https://github.com/akaariala/IODS-project
 
-Hmmm. why don't I see changes in my course diary?
+Hmmm... why don't I see changes in my course diary?
