@@ -1,6 +1,6 @@
 ---
 title: "IODS Course"
-author: "Antti K‰‰ri‰l‰"
+author: "Antti K√§√§ri√§l√§"
 date: 1 Nov 2018
 output: github_document
 ---
@@ -9,3 +9,4 @@ This is a neat data analysis course.
 
 Here is a link to my course diary: https://akaariala.github.io/IODS-project/
 
+ 
