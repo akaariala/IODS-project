@@ -132,8 +132,8 @@ $(document).ready(function () {
 <li>Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods</li>
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using</li>
 </ul>
-<div id="data-and-its-dimensions-and-structure-task-1" class="section level2">
-<h2>Data and its dimensions and structure (task 1)</h2>
+<div id="data-and-its-dimensions-and-structure-task-1" class="section level3">
+<h3>Data and its dimensions and structure (task 1)</h3>
 <p>The number of observations is 166, and there are 7 variables in the data. The variables include respondents gender and age. In addition, the data includes variables measuring respondents global attitude to statistics and sum of all exam points, as well as variables measuring to what extent the respondents approach learning by deep, startegic, and surface approaches.</p>
 <p>The data has the following structure:</p>
 <pre><code>## Classes 'tbl_df', 'tbl' and 'data.frame':    166 obs. of  7 variables:
@@ -145,8 +145,8 @@ $(document).ready(function () {
 ##  $ surf    : num  2.58 3.17 2.25 2.25 2.83 ...
 ##  $ Points  : int  25 12 24 10 22 21 21 31 24 26 ...</code></pre>
 </div>
-<div id="graphical-overview-of-the-data-and-summaries-of-the-variables-task-2" class="section level2">
-<h2>Graphical overview of the data and summaries of the variables (task 2)</h2>
+<div id="graphical-overview-of-the-data-and-summaries-of-the-variables-task-2" class="section level3">
+<h3>Graphical overview of the data and summaries of the variables (task 2)</h3>
 <p>Figure 1 shows the distributions of the variables in the data and how the variables are associated with each other. Most respondets are women, and the mean age of respondets is 26 years. Looking at the distribution of all variables by gender shows limited differences in distributions between men and women. An excpetion is attitude to statistics, in which men demonstrate more positive attitude than women.</p>
 <p>Observing the correlations between variables shows that attitude to statistics is highly positively correlated with exam results (Points variable), suggesting that positive attitudes to statistics improves exam performance. Learning approaces are modestly or weakly correlated with exam results.</p>
 <p>Learning approaches are generally rather modestly correlated with each other. However, there is one execption; as expected, the correlation between deep learning and surface learning approaches is negative.</p>
@@ -166,8 +166,8 @@ $(document).ready(function () {
 ##  3rd Qu.:3.167   3rd Qu.:27.75  
 ##  Max.   :4.333   Max.   :33.00</code></pre>
 </div>
-<div id="linear-regression-analysis-with-exam-points-as-the-dependent-variable-tasks-3-and-4" class="section level2">
-<h2>Linear regression analysis with exam points as the dependent variable (tasks 3 and 4)</h2>
+<div id="linear-regression-analysis-with-exam-points-as-the-dependent-variable-tasks-3-and-4" class="section level3">
+<h3>Linear regression analysis with exam points as the dependent variable (tasks 3 and 4)</h3>
 <p>I did a multiple linear regression analysis with exam points as the dependent variable and gender, age, and attitude to statistics as the independent variables. Of the independent variables, attitude to statistics is associated with better exam points (estimate 0.36, p &lt; 0.001).</p>
 <p>The association of gender and age with exam points is statistically insignificant, suggesting no relationship between these predictors and the outcome when controlling for all these three independent variables.</p>
 <p>The value of multiple R-squared is 0.20, which means that the model explains 20% of the variation in the dependent variable (i.e. exam points).</p>
@@ -212,8 +212,8 @@ $(document).ready(function () {
 ## Multiple R-squared:  0.1906, Adjusted R-squared:  0.1856 
 ## F-statistic: 38.61 on 1 and 164 DF,  p-value: 4.119e-09</code></pre>
 </div>
-<div id="diagnostic-tests-task-5" class="section level2">
-<h2>Diagnostic tests (task 5)</h2>
+<div id="diagnostic-tests-task-5" class="section level3">
+<h3>Diagnostic tests (task 5)</h3>
 <p>Linear regression model assumes first that the association between the variables of interest is linear. Second, errors between predicted and observed values of the dependent variable should be normally distributed.</p>
 <p>We can explore the assumption that the errors are normally distributed by looking at QQ-plot (Normal Q-Q in the figure below). The plot shows that errors follow the line in the plot reasonably well, indicating that the model is reasonably well in line with the normality assumption.</p>
 <p>One additional assumption in linear regression is that variance of errors is constant across values of dependent variable. Thus, an implication of this is that errors are not dependent on independent variables.</p>

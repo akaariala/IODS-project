@@ -107,7 +107,6 @@ Taken together, these three diagnostic plots show no sign of problems with model
 ```{r echo = FALSE}
 
 autoplot(lm(Points ~ gender + Age + Attitude, data = regr_analysis),
-         which = c(2, 1, 5), nrow = 2, label.size = 3,
-         title = "Fig. 2. Diagnostic plots") +
+         which = c(2, 1, 5), nrow = 2, label.size = 3) +
   theme_bw()
 ```
