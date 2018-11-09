@@ -1,7 +1,113 @@
-# Insert chapter 2 title here
+# Regression and model validation
 
 *Describe the work you have done this week and summarize your learning.*
 
 - Describe your work and results clearly. 
 - Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
 - Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+
+
+
+```{r echo = FALSE, message = FALSE}
+
+library(tidyverse, ggally)
+library(ggfortify, ggplot2)
+
+```
+
+```{r echo = FALSE}
+
+setwd("~/GitHub/IODS-project")
+
+regr_analysis <- as_tibble(read.table("learning2014.txt"))
+
+```
+
+
+
+### Data and its dimensions and structure (task 1)
+
+The number of observations is `r nrow(regr_analysis)`, and there are `r ncol(regr_analysis)` variables in the data. The variables include respondents gender and age. In addition, the data includes variables measuring respondents global attitude to statistics and sum of all exam points, as well as variables measuring to what extent the respondents approach learning by deep, startegic, and surface approaches.
+
+The data has the following structure:
+
+```{r echo = FALSE}
+
+str(regr_analysis)
+
+```
+
+
+
+### Graphical overview of the data and summaries of the variables (task 2)
+
+Figure 1 shows the distributions of the variables in the data and how the variables are associated with each other. Most respondets are women, and the mean age of respondets is 26 years. Looking at the distribution of all variables by gender shows limited differences in distributions between men and women. An excpetion is attitude to statistics, in which men demonstrate more positive attitude than women.
+
+Observing the correlations between variables shows that attitude to statistics is highly positively correlated with exam results (Points variable), suggesting that positive attitudes to statistics improves exam performance. Learning approaces are modestly or weakly correlated with exam results. 
+
+Learning approaches are generally rather modestly correlated with each other. However, there is one execption; as expected, the correlation between deep learning and surface learning approaches is negative.
+
+```{r echo = FALSE}
+
+GGally::ggpairs(regr_analysis, mapping = aes(alpha = 0.3), 
+        lower = list(combo = GGally::wrap("facethist", bins = 20)),
+        title = "Fig 1. Descriptive statistics and relationships between variables.")
+
+```
+
+```{r echo = FALSE}
+
+summary(regr_analysis)
+
+```
+
+
+
+### Linear regression analysis with exam points as the dependent variable (tasks 3 and 4)
+
+I did a multiple linear regression analysis with exam points as the dependent variable and gender, age, and attitude to statistics as the independent variables. Of the independent variables, attitude to statistics is associated with better exam points (estimate 0.36, p < 0.001). 
+
+The association of gender and age with exam points is statistically insignificant, suggesting no relationship between these predictors and the outcome when controlling for all these three independent variables.
+
+The value of multiple R-squared is 0.20, which means that the model explains 20% of the variation in the dependent variable (i.e. exam points).
+
+```{r echo = FALSE}
+
+summary(lm(Points ~ gender + Age + Attitude, data = regr_analysis))
+
+```
+
+
+Removing the two statistically insignificant independent variables from the model above results in the model below. In this model, there is only on predictor: exam points. Again, exam points are statistically significantly associated with better exam points.
+
+The value of multiple R-squared in the latter model is 0.19, which means that the model explains 19% of the variation in the dependent variable (i.e. exam points). This value is lower by 0.01 compared to the model above, indicating that the model above explained slightly larger part of the variation in exam points. 
+
+```{r echo = FALSE}
+
+summary(lm(Points ~ Attitude, data = regr_analysis))
+
+```
+
+
+
+### Diagnostic tests (task 5)
+
+Linear regression model assumes first that the association between the variables of interest is linear. Second, errors between predicted and observed values of the dependent variable should be normally distributed.
+
+We can explore the assumption that the errors are normally distributed by looking at QQ-plot (Normal Q-Q in the figure below). The plot shows that errors follow the line in the plot reasonably well, indicating that the model is reasonably well in line with the normality assumption.
+
+One additional assumption in linear regression is that variance of errors is constant across values of dependent variable. Thus, an implication of this is that errors are not dependent on independent variables. 
+
+To test this assumption, we can explore a plot that shows the relationship between residuals and predicted values (Residuals vs fitted in the figure below). There should be no visible pattern in the plot if the assumption holds true. This seems to be the case in our plot in which the points are quite randomly scattered.
+
+Finally, I tested how much impact single observation has on the model by exporing residual vs. leverage plot. Observing this plot shows that there are no observations that would stand out from others, suggesting that any single observation has not got a significant impact on the model.
+
+Taken together, these three diagnostic plots show no sign of problems with modelling assumptions.
+
+```{r echo = FALSE}
+
+autoplot(lm(Points ~ gender + Age + Attitude, data = regr_analysis),
+         which = c(2, 1, 5), nrow = 2, label.size = 3,
+         title = "Fig. 2. Diagnostic plots") +
+  theme_bw()
+```
