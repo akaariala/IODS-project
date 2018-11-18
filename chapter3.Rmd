@@ -1,0 +1,174 @@
+# Logistic regression
+
+```{r echo = FALSE, message = FALSE}
+
+library(tidyverse, GGally)
+
+url_data <- 
+  "http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/alc.txt"
+
+alc <- read.table(url_data, sep = ",", header = TRUE) %>%
+  as_tibble
+
+alc2 <- alc %>% select(sex, Medu, activities, G3, alc_use, high_use)
+
+```
+
+I am using data on student achievement from two Portugese schools. The data has records of student achievement and social and demographic background. In addition, the data contains variables on students' alcohol consumption. Thus, it is possible to analyse the relationship between alcohol consumption and some other student characteristcs, which is the purpose of this exercise. Below are the names of the variables in the data.
+
+```{r}
+names(alc)
+```
+
+In this excercise, I have chosen to analyze the following four variables in relation to student's alcohol consumption: student's sex, student's maternal education, extra curricular activities, and school achievement. 
+
+My hypothesis is that each of these variables are associated with alcohol consumption. 
+
+1. Boys use more alcohol than girls.
+2. Student's with low maternal education use more alcohol than those with high maternal education.
+3. Extracurricular activities are related to lower alcohol consumption.
+4. Higher school achievement is associated with lower alcohol consumption.
+
+### Descriptive data
+
+There are slightly more girl than boys in the data.
+
+```{r}
+
+ggplot(alc2, aes(x = sex)) +
+  geom_bar() +
+  ggtitle("Sex of the students")
+
+
+```
+
+There are more mother's with high education (4) than low education (0).
+
+
+```{r}
+
+ggplot(alc2, aes(x = Medu)) +
+  geom_bar() +
+  ggtitle("Mother's education")
+
+
+```
+
+Somewhat more students participate in extracurricular activities than not.
+
+```{r}
+
+ggplot(alc2, aes(x = activities)) +
+  geom_bar() +
+  ggtitle("Extracurricular activites")
+
+
+```
+
+Student's median alcohol use is 1,5, with 1 indicating very low alcohol use and 5 indicating very high use.
+
+```{r}
+
+ggplot(alc2, aes(y = alc_use)) +
+  geom_boxplot() +
+  ylab("Alcohol use (1 = very low, 5 = very high)") +
+  ggtitle("Alcohol use")
+
+
+```
+
+Median school achievement is `r median(alc2$G3)`.
+
+```{r}
+
+ggplot(alc2, aes(y = G3)) +
+  geom_boxplot() +
+  ylab("Achievement") +
+  ggtitle("School achivenment")
+
+
+```
+
+### Relationships between variables
+
+Boys use more alcohol than girls, as hypothesized.
+
+```{r}
+
+ggplot(alc2, aes(y = alc_use)) +
+  geom_boxplot() +
+  ylab("Alcohol use (1 = very low, 5 = very high)") +
+  ggtitle("Alcohol use by sex") +
+  facet_wrap(~ sex)
+
+
+```
+
+Unlike hypothesized, there are limited differences in alcohol use by maternal education.
+
+```{r}
+
+ggplot(alc2, aes(y = alc_use)) +
+  geom_boxplot() +
+  ylab("Alcohol use (1 = very low, 5 = very high)") +
+  ggtitle("Alcohol use by maternal education") +
+  facet_wrap(~ Medu, nrow = 1)
+
+
+```
+
+Unlike hyptohesized, those participationg in extracurricular activities consume alcohol similarly to those who do not have extracurricular activities. 
+
+```{r}
+
+ggplot(alc2, aes(y = alc_use)) +
+  geom_boxplot() +
+  ylab("Alcohol use (1 = very low, 5 = very high)") +
+  ggtitle("Alcohol use by extracurricular activities") +
+  facet_wrap(~ activities, nrow = 1)
+
+
+```
+
+As suggested by the horizonal directions of the blue line, unlike hypothesized, there seems to be no relationship between alcohol consumption and school achievement, or at least the relationship is not linear and clearly visible.
+
+```{r message = FALSE}
+
+ggplot(alc2, aes(x = alc_use, y = G3)) +
+  geom_jitter(alpha = 0.3) +
+  geom_smooth() +
+  xlab("Alcohol use (1 = very low, 5 = very high)") +
+  ylab("School achievement") +
+  ggtitle("Alcohol use and school achievement") 
+
+
+```
+
+The same seems to be the case also when plotting the association by sex.
+
+```{r message = FALSE}
+
+ggplot(alc2, aes(x = alc_use, y = G3, color = sex)) +
+  geom_jitter(alpha = 0.5) +
+  geom_smooth(aes(x = jitter(alc_use))) +
+  xlab("Alcohol use (1 = very low, 5 = very high)") +
+  ylab("School achievement") +
+  ggtitle("Alcohol use and school achievement by sex") 
+
+
+```
+
+### Logistic regression analysis
+
+When investigating the relationship between alcohol consumption as a binary response and the other chosen variables by logistic regression modelling, we observe that only sex has a statistically significant association with high alcohol consumption (p < 0.001), when all four variables are accounted for. Thus, boys use more alcohol than girls after adjusting for mothernal education, extracurricular activites, and school achievement. Below, the relationship between the chosen variables and high alcohol consuption is presented in odds ratios, showing that boys have 2.6 (95% CI 1.7--4.2) times higher odds for high alcohol consumption than girls. 
+
+
+```{r message = FALSE}
+m <- glm(high_use ~ Medu + sex + activities + G3, data = alc2, family = "binomial")
+OR <- coef(m) %>% exp
+CI <- confint(m) %>% exp
+summary(m)
+round(cbind(OR, CI), digits = 2)
+
+```
+
