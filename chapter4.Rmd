@@ -1,0 +1,185 @@
+# Clustering and classification
+
+```{r echo = FALSE, message = FALSE}
+
+setwd("~/GitHub/IODS-project")
+
+library(tidyverse)
+library(GGally)
+library(MASS)
+library(corrplot)
+
+boston <- as_tibble(MASS::Boston)
+
+```
+
+### Introduction to the data and data wrangling
+
+In this chapter, we study Boston housing data from R package MASS, which contains records on housing values in suburbs of Boston. The data includes observations from 506 suburbs and has 14 variables. Variable definitions can be found in [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html).
+
+```{r}
+
+str(boston)
+
+```
+
+Below is the summary of the variables in the data. There are 12 numeric and 2 integer variables in the data set and these all have different scale ranges. 
+
+
+```{r}
+
+summary(boston)
+
+```
+
+The instructions of this exercise suggested to present a graphical overview of the data and to describe the outputs and comment the distributions of the variables and their relationships. The graphical overview of the data gets very difficult to read because there are 14 variables in the data; plotting the variables pairwise leads to very small and hard to read output if functions introduced in the course are used (i.e. `GGAlly::ggpairs` or `pairs`). 
+
+Therefore, a new function `corrplot::corrplot` is introduced. The correlation plot below shows that several of the 14 variables are positively or negatively correlated to varying degrees.
+
+```{r}
+
+cor_matrix <- cor(boston)
+
+corrplot(cor_matrix, method = "circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+
+```
+
+Because all the variables have different scales, let's scale the data so that all the variables have mean value of 0 and standard deviation of 1.
+
+```{r}
+
+boston_scaled <- as_tibble(scale(boston))
+
+summary(boston_scaled)
+
+```
+
+Some data wrangling before moving on to linear discriminant analysis:
+
+```{r}
+
+# Creating a categorical crime variable
+
+bins <- quantile(boston_scaled$crim)
+crim_labels <- c("low", "med_low", "med_high", "high")
+
+boston_scaled <- boston_scaled %>%
+  mutate(crim = 
+           cut(crim,
+               breaks = bins,
+               labels = crim_labels,
+               include.lowest = TRUE))
+
+# splitting the data to traning and test sets
+
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+
+Correct <- test$crim
+test <- dplyr::select(test, -crim)
+
+```
+
+
+### Linear discriminant analysis (LDA)
+
+Fitting and printing the LDA model.
+
+```{r}
+
+# fitting the model
+lda.fit <- lda(crim ~ ., data = train)
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "grey", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crim)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes, main ="LDA (bi)plot")
+lda.arrows(lda.fit, myscale = 20)
+
+```
+
+Using test data set to predict the classes with the LDA model. 
+
+The corsstable below shows how well the LDA model predicts the crime rate in Boston suburbs. The LDA model is very accurate in predicting suburbs with high crime. Additionally, concerning suburbs with actual crime rate from low to medium high, the LDA model predicts crime rate rather accurately in the same region even if the prediction is not as accurate as with suburbs with high crome rate. 
+
+```{r}
+
+# fitting the model 
+lda.predict <- predict(lda.fit, newdata = test)
+
+# predicted values
+Predicted <- lda.predict$class
+
+# table of predicted vs. correct classes
+descr::crosstab(Correct, Predicted, prop.r = T, plot = F)
+
+```
+
+### K-means clustering
+
+Below is the summary of euclidian distances between observations.
+
+```{r}
+
+# the data
+boston <- as_tibble(MASS::Boston)
+boston_scaled <- as_tibble(scale(boston))
+
+# distance matrix 
+dist_eu <- dist(boston_scaled, method = "euclidian")
+summary(dist_eu)
+
+```
+
+Here is the first set of k-means clustering done with four clusters. For easier inspection, I only plotted tohe pairs of firts six variables in the data set.
+
+```{r}
+
+km <- kmeans(boston_scaled, centers = 4)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled[1:6], col = km$cluster)
+
+```
+
+I investigated the correct number of cluster by checking the total of within cluster sum of squares. After determining that the optimal number of clusters is two, I plotted the clusters again. 
+
+Interpratetion: the clusters seem to vary in across several variables. Looking at the crime variable, which has been the center if interest in this exercise, it looks like that the other cluster (black), includes suburbs with higher crime rates. The other cluster, however, includes only low crime rate suburbs.
+
+```{r}
+
+# MASS, ggplot2 and Boston dataset are available
+set.seed(123)
+
+# determine the number of clusters
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 2)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled[1:6], col = km$cluster)
+
+```
+
