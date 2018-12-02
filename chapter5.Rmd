@@ -1,0 +1,74 @@
+# Dimensionality reduction techniques
+
+```{r warning = FALSE, message = FALSE}
+
+setwd("~/GitHub/IODS-project/data")
+
+library(tidyverse)
+library(GGally)
+library(corrplot)
+
+human <- readRDS("human.rds")
+
+```
+
+### Introduction to the data 
+
+This week I am analysing data from `r nrow(human)` countries. The data has eigth variables on economic, demographic, and gender equality-related development of the countries. Descritive data of the variables are presented below. 
+
+```{r}
+
+summary(human)
+
+```
+
+The correlation plot below shows that several of the variables are positively or negatively correlated. Education, economic, and health related variables are positively correlated with each other. Only women's ratio to men in labor and women's represenation in parliament are not really correlated with other variables or with each other.
+
+```{r}
+
+corrplot(cor(human), method = "circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6) 
+
+```
+
+### Princpial component analysis (PCA)
+
+I will first experiment PCA with unstandardized data. The results below shows that if that is performed, already the first component captures virtually 100% of the variance. This is because PCA assumes that the greater the variance of a single variable is the more important the role of that variable is in capturing the total variance in the data. Because gross national income (GNI) is completely on its own scale compared to other variables in the data, that variable alone captures all of the variance. In the biplot (Fig 1.), we see that the correlation between GNI and principal componen 1 (PC1) is close to 1, thus suggesting a high importance of GNI to the model.
+
+```{r warning = FALSE}
+
+cap2 <- "ldkfjöalskd"
+
+# pca with unstandardized data
+pca_human1 <- prcomp(human)
+summary(pca_human1)$importance %>% round(digits = 1)
+biplot(pca_human1, cex = c(0.6, 1), col = c("grey40", "deeppink2"), main =  "Fig 1. Principal component analysis with unstandardized data.", caption = cap2)
+
+```
+
+Fig 2. present the results of PCA with standardized data. Comparing Fig. 2 with Fig 1. shows the benefit of stadardizing the data: results are different and now PCA makes sense. 
+
+The first two pricipal components could be labelled as "socioeconomic development" (PC1) and "gender equity" (PC2). The first principal component suggests that measures of education level, health, and economic development of a country are positively correlated with each other (or negatively when observing bad health, i.e. maternal mortality, and teenage childbirths). 
+
+The other principal component suggests that elements of gender equity, women's represenation in parliament and the ratio between women and men in working life, are positively correlated. However, this data suggets that socioeconomic development and gender equity are separate phenomena, and that women's education is related to improved health, better education, and economic development, not so much to gender equity. Women's education level is not thus necessarily alone a sufficient marker of gender equity.
+
+
+```{r}
+
+# standarized data and pca with it
+human_std <- scale(human)
+pca_human2 <- prcomp(human_std)
+
+# biplot axis titles
+s <- summary(pca_human2)
+pca_pr <- round(1*s$importance[2, ], digits = 2) * 100
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot(pca_human2, cex = c(0.6, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2], main =  "Fig 2. Principal component analysis with standardized data.")
+
+```
+
+
+### Multiple correspondence analysis (MCA)
+
+
