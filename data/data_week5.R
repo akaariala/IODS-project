@@ -18,8 +18,7 @@ keep <- c("country", "edu_sex_ratio", "labor_sex_ratio",
 last <- nrow(human) - 7
 
 # data manipulation
-human_ 
-human %>%
+human_ <- human %>%
   mutate(gni = str_replace(gni, pattern=",", replacement =""),
          gni = as.numeric(gni)) %>%
   select(one_of(keep)) %>%
