@@ -71,4 +71,39 @@ biplot(pca_human2, cex = c(0.6, 1), col = c("grey40", "deeppink2"), xlab = pc_la
 
 ### Multiple correspondence analysis (MCA)
 
+I use data on tea consumption of 300 persons and select four variables for analysis. The descriptive data are presented below. It shows that most common freaquency of tea consumption is twice a day. There are people from all age groups, genders, and socioeconomic status in the data.
+
+```{r}
+
+library(FactoMineR)
+
+data(tea)
+
+tea <- as.tibble(tea)
+
+tea_keep <- c("sex", "SPC", "age_Q", "frequency")
+
+tea_time <- tea %>% select(tea_keep)
+
+gather(tea_time) %>% ggplot(aes(value)) + geom_bar() + facet_wrap("key", scales = "free")
+
+```
+
+Below are the results from MCA. The analysis suggested 14 dimensions solution. The first two dimentions explained 13 % and 12% of the variance, respectively. The point of my analysis was to check if there is a tea consuption pattern that is shaped by sociodemographic characteristcs. The results, however, do not reveal any obvious patterns, suggesting that the chosen characteristics are unrelated to the frequency of tea consumption.
+
+```{r}
+
+mca <- MCA(tea_time, graph = F)
+
+summary(mca)
+
+```
+
+Below is the MCA's two first dimensions plotted. The second dimension (Dim2) relates non-worker status and age 60+ with each other, but not with any tea consumption frequency. 
+
+```{r}
+
+plot(mca, invisible = c("ind", "var"), habillage = "quali")
+
+```
 

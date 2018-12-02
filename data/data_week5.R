@@ -27,7 +27,7 @@ human_ <- human %>%
   as.data.frame() %>%
   column_to_rownames(var = "country") 
 
-# daving data
+# saving data
 write_rds(human_, "human.rds")
 
 
