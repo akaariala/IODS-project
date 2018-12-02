@@ -103,7 +103,7 @@ Below is the MCA's two first dimensions plotted. The second dimension (Dim2) rel
 
 ```{r}
 
-plot(mca, invisible = c("ind", "var"), habillage = "quali")
+plot(mca, invisible = c("ind"), habillage = "quali")
 
 ```
 
