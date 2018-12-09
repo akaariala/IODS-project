@@ -73,7 +73,7 @@ biplot(pca_human2, cex = c(0.6, 1), col = c("grey40", "deeppink2"), xlab = pc_la
 
 I use data on tea consumption of 300 persons and select four variables for analysis. The descriptive data are presented below. It shows that most common freaquency of tea consumption is twice a day. There are people from all age groups, genders, and socioeconomic status in the data.
 
-```{r}
+```{r warning = F}
 
 library(FactoMineR)
 

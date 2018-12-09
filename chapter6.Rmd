@@ -1,0 +1,283 @@
+# Analysis of longitudinal data
+
+```{r warning = FALSE, message = FALSE}
+
+library(tidyverse)
+library(GGally)
+library(corrplot)
+
+bprs <- as_tibble(read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt", sep  =" ", header = T))
+
+setwd("~/GitHub/IODS-project/data")
+
+schiz <- readRDS("bprs.rds")
+
+```
+
+### Part one: comparing two treatments of schizophrenia 
+
+This week I am analysing data from a study where two treatments for schizophrenic symptoms were compared with 20 participants receiving each treatments. The participant were tested weekly for eight week study period and randomly assigned to the two treatment groups. 
+
+First figure below shows the measurement findings for each participant and mean values in the two treatment groups. Already at this point we see that the means are not far from each other in the treatment groups, suggesting that there is no difference in the treatment effect between the two treatments. However, both of the treatments show decrease in the symptoms over the study period. 
+
+```{r}
+
+n <- schiz$subject %>% unique() %>% length()
+caption <- paste("Black line for the mean across participants.\n",
+            "Grey area for 95% confidence intervals of the mean across participants.\n",
+            "Grey lines for individual participants.", sep = "")
+
+schiz_s <- schiz %>%
+  group_by(treatment, week) %>%
+  summarize(mean = mean(bprs), sem = sd(bprs) / sqrt(n)) %>%
+  ungroup
+
+ggplot() +
+  geom_line(data = schiz_s, 
+            aes(x = week, y = mean), 
+            size = 0.8) +
+  geom_ribbon(data = schiz_s, 
+              aes(x = week, 
+                  ymin = mean - 2 * sem,
+                  ymax = mean + 2 * sem),
+              alpha = 0.3) +
+  geom_line(data = schiz, 
+            aes(x = week, y = bprs, linetype = subject), 
+            alpha = 0.3) +
+  scale_linetype_manual(values = rep(1, times = 40)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  labs(y = "bprs", caption = caption) +
+  theme_minimal() +
+  theme(legend.position = "none", 
+        plot.caption = element_text(hjust = 0)) 
+
+```
+
+Here is a figure that shows weekly scaled results. It shows how those who have higher symptoms at the beginning of the study period have higher symptoms throrough the study perios. This is know as tracking effect.
+
+```{r}
+
+schiz <- schiz %>%
+  group_by(week) %>%
+  mutate(stdbprs = scale(bprs)) %>%
+  ungroup()
+
+
+ggplot(schiz, aes(x = week, y = stdbprs, 
+                  linetype = subject, color = subject)) +
+  geom_line() +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  scale_linetype_manual(values = rep(1, times = 40)) +
+  scale_y_continuous(limits = c(min(schiz$stdbprs), max(schiz$stdbprs))) +
+  ylab("standardized bprs") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+Below we see the weekly means with standard errors of the symptoms in the two treatment group. We see that mostly throughout the follow-up, there are no differences in the means between the treatment groups, which is suggested by mean values close to each other and overlapping error bars. However, during the last two weeks, treatment 1 shows somewhat more promising results, although the error bars are still overlapping.
+
+```{r}
+
+pd <- position_dodge(0.4)
+
+ggplot(schiz_s, aes(x = week, y = mean, shape = treatment)) +
+  geom_line(aes(linetype = treatment), position = pd) + 
+  geom_point(size = 3, position = pd) +
+  geom_errorbar(aes(ymin = mean - sem, ymax = mean + sem), 
+                width = 0.35, position = pd) +
+  scale_linetype_manual(values = c(1,2)) +
+  theme_minimal() +
+  theme(legend.position = c(0.8,0.8)) +
+  scale_y_continuous(name = "mean(bprs) +/- se(bprs)") +
+  ggtitle("Mean response profiles for the two treatment groups in the BPRS data.")
+
+
+```
+
+Let's see what the means of the symptoms in the two treatment groups show when aggregated over the follow-up period in the bolxplot below. We see that there is hardly any difference in means. However, there is somewhat more variation in group 2. Additionally, there is one outlier in treatment group 2 above bprs value of 70.
+
+```{r}
+
+schiz8s <- schiz %>%
+  filter(week > 0) %>%
+  group_by(treatment, subject) %>%
+  summarise(mean = mean(bprs)) %>%
+  ungroup()
+
+# boxplot of the mean versus treatment
+ggplot(schiz8s, aes(x = treatment, y = mean)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.6) +
+  stat_summary(fun.y = "mean", geom = "point", 
+               shape = 23, size = 4, fill = "white") +
+  scale_y_continuous(name = "mean(bprs), weeks 1-8") +
+  theme_minimal()
+
+```
+
+When we exclude one outlier found in previous figure, we get a boxplot figure presented below. Not much difference to the plot above, although the variation in treatment group 2 has obviously decresed sligthly.
+
+```{r}
+
+# filtering outlier
+schiz8s3 <- schiz8s %>% filter(mean < 70)
+
+ggplot(schiz8s3, aes(x = treatment, y = mean)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.6) +
+  stat_summary(fun.y = "mean", geom = "point", 
+               shape = 23, size = 4, fill = "white") +
+  scale_y_continuous(name = "mean(bprs), weeks 1-8") +
+  theme_minimal()
+
+
+```
+
+
+Finally, let's test the statistical difference between the two groups. No difference as suggested by the t-test results. There was also no difference in linear regression model after accountng for baseline symptoms. This is suggested by the anova table of the fitted regression model below. However, the baseline measurement was strongly associated with the summary measure of mean over the treatment period. 
+
+Additionally, as we chose to collate the data for all follow-up weeks as our summary statistics, it may be that we missed some relevant differences in the two treatments. In the descriptive examination below, we noted that there was difference in the two treatments during the last three weeks of the follow-up period. If it would be relevant for evaluating the treatment, we might be able to find a difference if we investigated only the last three weeks of the experiment. It is, of course, a question that if this is not an appropriate way to evaluate the treatment, then this kind of investigation would be plain [p-hacking](https://en.wikipedia.org/wiki/Data_dredging).
+
+```{r}
+
+# two-sample t-test
+t.test(mean ~ treatment, data = schiz8s, var.equal = TRUE)
+
+schiz8s2 <- schiz8s %>% mutate(baseline = bprs$week0)
+
+fit <- lm(mean ~ treatment + baseline, data = schiz8s2)
+
+anova(fit)
+
+```
+
+### Part two: rat experiment
+
+In this part, I am investigating a longitudinal data on an experiment of three groups of rats with different diets. The outcome of the study is rats' body weight which was measured repeatedly over a 9-week study period. The question of interest is, whether the body weight of rats differ in the three groups.
+
+The figure below shows the progression over the study period in the weight of the 16 rats diveded into the three study groups. From the figure, we see that the weight of the rats increased during the study period. 
+
+```{r message = FALSE}
+
+setwd("~/GitHub/IODS-project/data")
+
+RATSL <- readRDS("rats.rds")
+
+ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
+  geom_line(aes(linetype = Group), size = 0.7) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 10)) +
+  scale_y_continuous(name = "Weight (grams)") +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  scale_linetype_manual(values = c(1, 3, 5))
+
+```
+
+For the sake of an example, let's assume that we are dealing with data where measurements are independent of each other, or, specifically, that the weight measurements over the 11 measurements are not from the same rat. Thus, we can try to fit a linear regression model where we have weight as the dependent variable and measurement time and study group as independent variables. Below are the results from the regression model. The results show, as expected from the figure above, that, controlling for time, group is significantly associated with weight so that rats in groups 2 and 3 are heavier than rats in group 1 are. In addition, measurement time is significantly associated with increase in weight, as we also observed in the figure above.
+
+```{r}
+
+RATS_reg <- lm(Weight ~ Time + Group, data = RATSL)
+summary(RATS_reg)
+
+```
+
+Now, to approach more realistic modelling of our data, let's use random intercept model, which allows individual intercept terms for each rat, thus not assuming that rats share similar baseline weight. From the model summary below, we see that group and measurement time are associated with weight of the rats. (The estimates are actually identical to the model above.)
+
+Looking at the standard deviation of the weight of rats shows that the modelled deviation is lower than the "actual" standard deviation, suggesting that the model is able to take into account that rats belong to three different groups and that standard deviation is relative to the study group. 
+
+```{r message = F}
+
+library(lme4)
+
+RATS_ref <- lmer(Weight ~ Time + Group + (1 | ID), data = RATSL, REML = FALSE)
+
+summary(RATS_ref)
+
+```
+
+To add to the model above, we can account for the individual differences in the weight increase of the rats and the effect of time by utilizing random intercept and random slope model. The results below are very similar to the model above and show that weight is groups 2 and 3 are associated with higher weight. In addition, the results show that the weight increases with time.
+
+```{r}
+
+RATS_ref1 <- lmer(Weight ~ Time + Group + (Time | ID), data = RATSL, REML = FALSE)
+
+summary(RATS_ref1)
+
+```
+
+Comparing the two previous models with each other with the ANOVA table below shows that the slope model provides a better fit (p < 0.001).
+
+```{r}
+
+anova(RATS_ref1, RATS_ref)
+
+```
+
+Finally, let's test interaction with time and study group to see if there are differences in the growth rates that the different diet yield. The results show that diet in group 2 results in faster increase in weight by 0.61 grams per day than the diet in group 1. The finding concerning group 3 vis-a-vis group 1 is similar but only with 0.30 grams' increase per day.
+
+```{r}
+
+RATS_ref2 <- lmer(Weight ~ Time * Group + (Time | ID), data = RATSL, REML = FALSE)
+
+summary(RATS_ref2)
+
+```
+
+When comparing which model has better fit, the interaction model or the one without interaction, we see from the ANOVA table below that the interaction model has a better fit (p < 0.01). What I am wondering is that wouldn't we choose the interaction model even if it didn't provide a better fit since this is the model which is able to answer to the study question: are there differences in the weight gains between different diets. Based on this model we can say yes there are.
+
+```{r}
+
+anova(RATS_ref2, RATS_ref1)
+
+```
+
+The figure below compares the observed weights with the fitted weigths from the final interaction model. From the figure we can see that the fitted model provides very well fitted weight progression for each rat.
+
+```{r message = F}
+
+library(cowplot)
+
+rats_p0 <- ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
+  geom_line(aes(linetype = Group), size = 0.7) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 20)) +
+  scale_y_continuous(name = "Observed weight (grams)",
+                     limits = c(220, 650)) +
+  theme(legend.position = "top") +
+  scale_linetype_manual(values = c(1, 3, 5))
+
+leg <- get_legend(rats_p0)
+
+rats_p1 <- ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
+  geom_line(aes(linetype = Group), size = 0.7) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 20)) +
+  scale_y_continuous(name = "Weight (grams)",
+                     limits = c(220, 650)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  ggtitle("Observed") +
+  scale_linetype_manual(values = c(1, 3, 5))
+
+fitted_values <- fitted(RATS_ref2)
+
+RATSL <- RATSL %>%
+  mutate(fitted = fitted_values)
+
+rats_p2 <- ggplot(RATSL, aes(x = Time, y = fitted_values, group = ID)) +
+  geom_line(aes(linetype = Group), size = 0.7) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 20)) +
+  scale_y_continuous(name = " ",
+                     limits = c(220, 650)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  ggtitle("Fitted") +
+  scale_linetype_manual(values = c(1, 3, 5))
+
+blank <- ggdraw(plot = NULL, xlim = c(0, 1), ylim = c(0, 1))
+pg1 <- plot_grid(rats_p1, rats_p2)
+leg1 <- plot_grid(blank, leg, blank, nrow = 1)
+plot_grid(leg1, pg1, nrow = 2, rel_heights = c(1, 6))
+
+```
+
